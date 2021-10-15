@@ -130,15 +130,17 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
         if is_train:
             self.optimizer.zero_grad()
+        print(batch['spectrogram'].shape)
         outputs = self.model(**batch)
         if type(outputs) is dict:
             batch.update(outputs)
         else:
             batch["logits"] = outputs
 
+        print(batch["logits"].shape)
         batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)
         batch["log_probs_length"] = self.model.transform_input_lengths(
-            batch["spectrogram_length"]
+            batch["text_encoded_length"]
         )
         batch["loss"] = self.criterion(**batch)
         if is_train:
@@ -206,7 +208,7 @@ class Trainer(BaseTrainer):
         if self.writer is None:
             return
         predictions = log_probs.cpu().argmax(-1)
-        pred_texts = [self.text_encoder.ctc_decode(p) for p in predictions]
+        pred_texts = [self.text_encoder.ctc_decode(p.numpy()) for p in predictions]
         argmax_pred_texts = [
             self.text_encoder.decode(p)[: int(l)]
             for p, l in zip(predictions, log_probs_length)
