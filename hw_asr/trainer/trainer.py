@@ -110,9 +110,10 @@ class Trainer(BaseTrainer):
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
-                self.writer.add_scalar(
-                    "learning rate", self.lr_scheduler.get_last_lr()[0]
-                )
+                if self.lr_scheduler is not None:
+                    self.writer.add_scalar(
+                        "learning rate", self.lr_scheduler.get_last_lr()[0]
+                    )
                 self._log_predictions(part="train", **batch)
                 self._log_spectrogram(batch["spectrogram"])
                 self._log_scalars(self.train_metrics)
@@ -130,18 +131,14 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch, self.device)
         if is_train:
             self.optimizer.zero_grad()
-        print(batch['spectrogram'].shape)
         outputs = self.model(**batch)
         if type(outputs) is dict:
             batch.update(outputs)
         else:
             batch["logits"] = outputs
 
-        print(batch["logits"].shape)
         batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)
-        batch["log_probs_length"] = self.model.transform_input_lengths(
-            batch["text_encoded_length"]
-        )
+        batch["log_probs_length"] = self.model.transform_input_lengths(batch["spectrogram_length"])
         batch["loss"] = self.criterion(**batch)
         if is_train:
             batch["loss"].backward()
@@ -212,8 +209,8 @@ class Trainer(BaseTrainer):
             inds[: int(ind_len)]
             for inds, ind_len in zip(argmax_inds, log_probs_length)
         ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
+        argmax_texts_raw = [self.text_encoder.decode(inds.numpy()) for inds in argmax_inds]
+        argmax_texts = [self.text_encoder.ctc_decode(inds.numpy()) for inds in argmax_inds]
         tuples = list(zip(argmax_texts, text, argmax_texts_raw))
         shuffle(tuples)
         to_log_pred = []
