@@ -1,6 +1,6 @@
 import logging
 from typing import List
-
+import re
 logger = logging.getLogger(__name__)
 
 import torch
@@ -24,7 +24,7 @@ def collate_fn(dataset_items: List[dict]):
         result_batch["spectrogram_length"].append(result_batch['spectrogram'][-1].shape[0])
         result_batch['text_encoded'].append(dataset_items[i]['text_encoded'].T)
         result_batch['text_encoded_length'].append(result_batch['text_encoded'][-1].shape[0])
-        result_batch['text'].append(dataset_items[i]['text']) #.translate(None, str.punctuation)
+        result_batch['text'].append(re.sub(r'[^\w\s]','',dataset_items[i]['text']))
     
     result_batch['spectrogram'] = pad_sequence(result_batch['spectrogram'], padding_value=-1, batch_first=True)
     result_batch['spectrogram'] = result_batch['spectrogram'][:,:,:,0]
