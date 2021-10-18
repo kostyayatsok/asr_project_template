@@ -82,7 +82,8 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        self.writer.add_scalar("epoch", epoch)
+        if self.writer is not None:
+            self.writer.add_scalar("epoch", epoch)
         for batch_idx, batch in enumerate(
                 tqdm(self.data_loader, desc="train", total=self.len_epoch)
         ):
@@ -103,7 +104,7 @@ class Trainer(BaseTrainer):
                 else:
                     raise e
             self.train_metrics.update("grad norm", self.get_grad_norm())
-            if batch_idx % self.log_step == 0:
+            if batch_idx % self.log_step == 0 and self.writer is not None:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
                 self.logger.debug(
                     "Train Epoch: {} {} Loss: {:.6f}".format(
@@ -172,14 +173,16 @@ class Trainer(BaseTrainer):
                     is_train=False,
                     metrics=self.valid_metrics,
                 )
-            self.writer.set_step(epoch * self.len_epoch, "valid")
+            if self.writer is not None:
+                self.writer.set_step(epoch * self.len_epoch, "valid")
             self._log_scalars(self.valid_metrics)
             self._log_predictions(part="val", **batch)
             self._log_spectrogram(batch["spectrogram"])
 
-        # add histogram of model parameters to the tensorboard
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins="auto")
+        if self.writer is not None:
+            # add histogram of model parameters to the tensorboard
+            for name, p in self.model.named_parameters():
+                self.writer.add_histogram(name, p, bins="auto")
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):
@@ -202,8 +205,6 @@ class Trainer(BaseTrainer):
             **kwargs,
     ):
         # TODO: implement logging of beam search results
-        if self.writer is None:
-            return
         argmax_inds = log_probs.cpu().argmax(-1)
         argmax_inds = [
             inds[: int(ind_len)]
@@ -222,6 +223,10 @@ class Trainer(BaseTrainer):
                 f"true: '{target}' | pred: '{pred}' "
                 f"| wer: {wer:.2f} | cer: {cer:.2f}"
             )
+            print(target)
+            print(pred)
+            print(wer)
+            print(cer)
             to_log_pred_raw.append(f"true: '{target}' | pred: '{raw_pred}'\n")
         self.writer.add_text(f"predictions", "< < < < > > > >".join(to_log_pred))
         self.writer.add_text(
@@ -248,7 +253,5 @@ class Trainer(BaseTrainer):
         return total_norm.item()
 
     def _log_scalars(self, metric_tracker: MetricTracker):
-        if self.writer is None:
-            return
         for metric_name in metric_tracker.keys():
             self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))
