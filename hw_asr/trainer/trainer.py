@@ -52,10 +52,10 @@ class Trainer(BaseTrainer):
         self.log_step = 10
 
         self.train_metrics = MetricTracker(
-            "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "Metrics/loss", "Metrics/grad_norm", *[m.name for m in self.metrics], writer=self.writer
         )
         self.valid_metrics = MetricTracker(
-            "loss", *[m.name for m in self.metrics], writer=self.writer
+            "Metrics/loss", *[m.name for m in self.metrics], writer=self.writer
         )
 
     @staticmethod
@@ -103,7 +103,7 @@ class Trainer(BaseTrainer):
             #         continue
             #     else:
             #         raise e
-            self.train_metrics.update("grad norm", self.get_grad_norm())
+            self.train_metrics.update("Metrics/grad_norm", self.get_grad_norm())
             if batch_idx % self.log_step == 0 and self.writer is not None:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
                 self.logger.debug(
@@ -117,6 +117,7 @@ class Trainer(BaseTrainer):
                     )
                 self._log_predictions(part="train", **batch)
                 self._log_spectrogram(batch["spectrogram"])
+                self._log_audio(batch["audio"])
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -148,7 +149,7 @@ class Trainer(BaseTrainer):
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        metrics.update("loss", batch["loss"].item())
+        metrics.update("Metrics/loss", batch["loss"].item())
         for met in self.metrics:
             metrics.update(met.name, met(**batch))
         return batch
@@ -175,14 +176,15 @@ class Trainer(BaseTrainer):
                 )
             if self.writer is not None:
                 self.writer.set_step(epoch * self.len_epoch, "valid")
-            self._log_scalars(self.valid_metrics)
-            self._log_predictions(part="val", **batch)
-            self._log_spectrogram(batch["spectrogram"])
+                self._log_scalars(self.valid_metrics)
+                self._log_predictions(part="val", **batch)
+                self._log_spectrogram(batch["spectrogram"])
+                self._log_audio(batch["audio"])
 
         if self.writer is not None:
             # add histogram of model parameters to the tensorboard
             for name, p in self.model.named_parameters():
-                self.writer.add_histogram(name, p, bins="auto")
+                self.writer.add_histogram(f"Weighths/{name}", p, bins="auto")
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):
@@ -221,22 +223,27 @@ class Trainer(BaseTrainer):
             cer = calc_cer(target, pred) * 100
             to_log_pred.append(
                 f"true: '{target}' | pred: '{pred}' "
-                f"| wer: {wer:.2f} | cer: {cer:.2f}"
+                f"| wer: {wer:.2f} | cer: {cer:.2f}\n"
             )
             print(target)
             print(pred)
             print(wer)
             print(cer)
             to_log_pred_raw.append(f"true: '{target}' | pred: '{raw_pred}'\n")
-        self.writer.add_text(f"predictions", "< < < < > > > >".join(to_log_pred))
+        self.writer.add_text(f"Media/predictions", "< < < < > > > >".join(to_log_pred))
         self.writer.add_text(
-            f"predictions_raw", "< < < < > > > >".join(to_log_pred_raw)
+            f"Media/predictions_raw", "< < < <> > > >".join(to_log_pred_raw)
         )
 
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch)
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram.cpu().log()))
-        self.writer.add_image("spectrogram", ToTensor()(image))
+        self.writer.add_image("Media/spectrogram", ToTensor()(image).T)
+
+    def _log_audio(self, audio_batch):
+        audio = random.choice(audio_batch)
+        self.writer.add_audio("Media/audio", audio)
+
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

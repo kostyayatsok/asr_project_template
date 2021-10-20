@@ -11,26 +11,32 @@ def collate_fn(dataset_items: List[dict]):
     """
     Collate and pad fields in dataset items
     """
-    if len(dataset_items) == 0: return {}
     result_batch = {
         'spectrogram' : [],
         'spectrogram_length' : [],
         'text_encoded' : [],
         'text_encoded_length' : [],
-        'text' : []
+        'text' : [],
+        'audio' : []
     }
+    if len(dataset_items) == 0: return {}
+    
     for i in range(len(dataset_items)):
         result_batch['spectrogram'].append(dataset_items[i]['spectrogram'].T)
         result_batch["spectrogram_length"].append(result_batch['spectrogram'][-1].shape[0])
         result_batch['text_encoded'].append(dataset_items[i]['text_encoded'].T)
         result_batch['text_encoded_length'].append(result_batch['text_encoded'][-1].shape[0])
         result_batch['text'].append(re.sub(r'[^\w\s]','',dataset_items[i]['text']))
+        result_batch['audio'].append(dataset_items[i]['audio'])
     
-    result_batch['spectrogram'] = pad_sequence(result_batch['spectrogram'], padding_value=-1, batch_first=True)
+    result_batch['spectrogram'] = pad_sequence(result_batch['spectrogram'], padding_value=0, batch_first=True)
     result_batch['spectrogram'] = result_batch['spectrogram'][:,:,:,0]
+    # if result_batch['spectrogram'].shape[1] % 16:
+    #     pad = (0, 0, 0, 16 - result_batch['spectrogram'].shape[1] % 16, 0, 0)
+    #     result_batch['spectrogram'] = F.pad(result_batch['spectrogram'], pad)
     result_batch['spectrogram_length'] = torch.tensor(result_batch['spectrogram_length'])
     
-    result_batch['text_encoded'] = pad_sequence(result_batch['text_encoded'], padding_value=-1, batch_first=True).long()
+    result_batch['text_encoded'] = pad_sequence(result_batch['text_encoded'], padding_value=0, batch_first=True).long()
     result_batch['text_encoded'] = result_batch['text_encoded'][:,:,0]
     
     result_batch['text_encoded_length'] = torch.tensor(result_batch['text_encoded_length'])
