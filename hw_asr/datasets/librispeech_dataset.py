@@ -44,7 +44,7 @@ class LibrispeechDataset(BaseDataset):
 
     def _load_part(self, part):
         arch_path = self._data_dir / f"{part}.tar.gz"
-        print(f"Loading part {part}")
+        print(f"Loading part {part}")  # stationary print
         download_file(URL_LINKS[part], arch_path)
         shutil.unpack_archive(arch_path, self._data_dir)
         for fpath in (self._data_dir / "LibriSpeech").iterdir():
@@ -103,4 +103,4 @@ if __name__ == "__main__":
         "dev-clean", text_encoder=text_encoder, config_parser=config_parser
     )
     item = ds[0]
-    print(item)
+    print(item)  # stationary print

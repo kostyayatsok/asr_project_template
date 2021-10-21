@@ -31,11 +31,7 @@ def collate_fn(dataset_items: List[dict]):
     
     result_batch['spectrogram'] = pad_sequence(result_batch['spectrogram'], padding_value=0, batch_first=True)
     result_batch['spectrogram'] = result_batch['spectrogram'][:,:,:,0]
-    # if result_batch['spectrogram'].shape[1] % 16:
-    #     pad = (0, 0, 0, 16 - result_batch['spectrogram'].shape[1] % 16, 0, 0)
-    #     result_batch['spectrogram'] = F.pad(result_batch['spectrogram'], pad)
     result_batch['spectrogram_length'] = torch.tensor(result_batch['spectrogram_length'])
-    
     result_batch['text_encoded'] = pad_sequence(result_batch['text_encoded'], padding_value=0, batch_first=True).long()
     result_batch['text_encoded'] = result_batch['text_encoded'][:,:,0]
     

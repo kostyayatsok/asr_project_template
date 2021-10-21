@@ -32,4 +32,4 @@ if __name__ == "__main__":
     ds = CustomDirAudioDataset("data/datasets/custom/audio",
                                text_encoder=text_encoder, config_parser=config_parser)
     item = ds[0]
-    print(item)
+    print(item)  # stationary print

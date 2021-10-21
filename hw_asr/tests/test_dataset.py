@@ -20,7 +20,7 @@ class TestDataset(unittest.TestCase):
             limit=10,
         )
         item = ds[0]
-        print(item)
+        print(item)  # stationary print
 
     def test_custom_dataset(self):
         text_encoder = CTCCharTextEncoder.get_simple_alphabet()
@@ -39,4 +39,4 @@ class TestDataset(unittest.TestCase):
             max_text_length=130,
         )
         item = ds[0]
-        print(item)
+        print(item)  # stationary print

@@ -87,22 +87,22 @@ class Trainer(BaseTrainer):
         for batch_idx, batch in enumerate(
                 tqdm(self.data_loader, desc="train", total=self.len_epoch)
         ):
-            # try:
-            batch = self.process_batch(
-                batch,
-                is_train=True,
-                metrics=self.train_metrics,
-            )
-            # except RuntimeError as e:
-            #     if "out of memory" in str(e) and self.skip_oom:
-            #         self.logger.warning("OOM on batch. Skipping batch.")
-            #         for p in self.model.parameters():
-            #             if p.grad is not None:
-            #                 del p.grad  # free some memory
-            #         torch.cuda.empty_cache()
-            #         continue
-            #     else:
-            #         raise e
+            try:
+                batch = self.process_batch(
+                    batch,
+                    is_train=True,
+                    metrics=self.train_metrics,
+                )
+            except RuntimeError as e:
+                if "out of memory" in str(e) and self.skip_oom:
+                    self.logger.warning("OOM on batch. Skipping batch.")
+                    for p in self.model.parameters():
+                        if p.grad is not None:
+                            del p.grad  # free some memory
+                    torch.cuda.empty_cache()
+                    continue
+                else:
+                    raise e
             self.train_metrics.update("Metrics/grad_norm", self.get_grad_norm())
             if batch_idx % self.log_step == 0 and self.writer is not None:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -238,7 +238,7 @@ class Trainer(BaseTrainer):
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch)
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram.cpu().log()))
-        self.writer.add_image("Media/spectrogram", ToTensor()(image).T)
+        self.writer.add_image("Media/spectrogram", ToTensor()(image))
 
     def _log_audio(self, audio_batch):
         audio = random.choice(audio_batch)

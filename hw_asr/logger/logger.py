@@ -25,5 +25,5 @@ def setup_logging(
     else:
         print(
             "Warning: logging configuration file is not found in {}.".format(log_config)
-        )
+        )  # stationary print
         logging.basicConfig(level=default_level)

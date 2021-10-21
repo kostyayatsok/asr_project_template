@@ -7,8 +7,12 @@ from hw_asr.base import BaseModel
 class Block(nn.Module):
     def __init__(self, n_subblocks, p, in_ch, out_ch, kernel_size, stride=1, dilation=1):
         super().__init__()
-        padding = (kernel_size // 2) * dilation
-        self.use_residual = n_subblocks > 1
+        padding = (kernel_size - 1)//2
+        if stride == 1 and dilation == 1:
+            # padding = (kernel_size // 2) * dilation
+            self.use_residual = True
+        else:
+            self.use_residual = False
         self.residual_process = nn.Sequential(
             nn.Conv1d(in_ch, out_ch, kernel_size=1),
             nn.BatchNorm1d(out_ch, eps=1e-3, momentum=0.1)
@@ -32,7 +36,6 @@ class Block(nn.Module):
         self.last_dropout = nn.Dropout(p)
 
     def forward(self, input):
-        print('=====>>>', self)
         x = self.gobrrrrr(input)
 
         x = self.last_conv1d(x)
@@ -49,21 +52,27 @@ class JasperModel(BaseModel):
     #TODO: 20ms windows with a 10ms overlap; We use 40 features for WSJ and 64 for LibriSpeech and F+S
     def __init__(self, n_feats, n_class):
         super().__init__(n_feats, n_class)
-        self.Conv1 = Block(n_subblocks=1, p=0.2, in_ch=1   , out_ch=256 , kernel_size=11, stride=2) #TODO: in_ch?
-        self.B1    = Block(n_subblocks=5, p=0.2, in_ch=256 , out_ch=256 , kernel_size=11)
-        self.B2    = Block(n_subblocks=5, p=0.2, in_ch=256 , out_ch=384 , kernel_size=13)
-        self.B3    = Block(n_subblocks=5, p=0.2, in_ch=384 , out_ch=512 , kernel_size=17)
-        self.B4    = Block(n_subblocks=5, p=0.3, in_ch=512 , out_ch=640 , kernel_size=21)
-        self.B5    = Block(n_subblocks=5, p=0.3, in_ch=640 , out_ch=768 , kernel_size=25)
-        self.Conv2 = Block(n_subblocks=1, p=0.4, in_ch=768 , out_ch=896 , kernel_size=29, dilation=2)
-        self.Conv3 = Block(n_subblocks=1, p=0.4, in_ch=896 , out_ch=1024, kernel_size=1 )
-        self.Conv4 = Block(n_subblocks=1, p=0.0, in_ch=1024, out_ch=n_class, kernel_size=1)
+        ch, inc = n_feats, 128 
+        self.Conv1 = Block(n_subblocks=1, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=11, stride=2); ch = ch+inc
+        self.B1    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=11); ch = ch+inc
+        self.B2    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=13); ch = ch+inc
+        self.B3    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=17); ch = ch+inc
+        self.B4    = Block(n_subblocks=3, p=0.3, in_ch=ch, out_ch=ch+inc, kernel_size=21); ch = ch+inc
+        self.B5    = Block(n_subblocks=3, p=0.3, in_ch=ch, out_ch=ch+inc, kernel_size=25); ch = ch+inc
+        self.Conv2 = Block(n_subblocks=1, p=0.4, in_ch=ch, out_ch=ch+inc, kernel_size=29, dilation=2); ch = ch+inc
+        self.Conv3 = Block(n_subblocks=1, p=0.4, in_ch=ch, out_ch=ch+inc, kernel_size=1);  ch = ch+inc
+        self.Conv4 = Block(n_subblocks=1, p=0.0, in_ch=ch, out_ch=n_class, kernel_size=1)
 
-        self.B1_   = Block(n_subblocks=5, p=0.2, in_ch=256 , out_ch=256 , kernel_size=11)
-        self.B2_   = Block(n_subblocks=5, p=0.2, in_ch=384 , out_ch=384 , kernel_size=13)
-        self.B3_   = Block(n_subblocks=5, p=0.2, in_ch=512 , out_ch=512 , kernel_size=17)
-        self.B4_   = Block(n_subblocks=5, p=0.3, in_ch=640 , out_ch=640 , kernel_size=21)
-        self.B5_   = Block(n_subblocks=5, p=0.3, in_ch=768 , out_ch=768 , kernel_size=25)
+        
+        # self.B1_   = Block(n_subblocks=5, p=0.2, in_ch=256 , out_ch=256 , kernel_size=11)
+        
+        # self.B2_   = Block(n_subblocks=5, p=0.2, in_ch=384 , out_ch=384 , kernel_size=13)
+        
+        # self.B3_   = Block(n_subblocks=5, p=0.2, in_ch=512 , out_ch=512 , kernel_size=17)
+        
+        # self.B4_   = Block(n_subblocks=5, p=0.3, in_ch=640 , out_ch=640 , kernel_size=21)
+        
+        # self.B5_   = Block(n_subblocks=5, p=0.3, in_ch=768 , out_ch=768 , kernel_size=25)
 
         self.gobrrrrr = nn.Sequential(
               self.Conv1 
@@ -83,12 +92,10 @@ class JasperModel(BaseModel):
         )
 
     def forward(self, spectrogram, *args, **kwargs):
-        spectrogram = torch.unsqueeze(spectrogram, 1)
-        spectrogram = torch.flatten(spectrogram, start_dim=2)
-        out = self.gobrrrrr(spectrogram)
-        out = torch.transpose(out, 1, 2)
-        print(out.shape)
+        x = torch.transpose(spectrogram, 1, 2)
+        x = self.gobrrrrr(x)
+        out = torch.transpose(x, 1, 2)
         return out
 
     def transform_input_lengths(self, input_lengths):
-        return input_lengths  #TODO: Do we reduce time dimension here?
+        return input_lengths//4 #TODO: Do we reduce time dimension here?
