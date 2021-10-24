@@ -52,8 +52,8 @@ class JasperModel(BaseModel):
     #TODO: 20ms windows with a 10ms overlap; We use 40 features for WSJ and 64 for LibriSpeech and F+S
     def __init__(self, n_feats, n_class):
         super().__init__(n_feats, n_class)
-        ch, inc = n_feats, 128 
-        self.Conv1 = Block(n_subblocks=1, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=11, stride=2); ch = ch+inc
+        ch, inc = 128, 128 
+        self.Conv1 = Block(n_subblocks=1, p=0.2, in_ch=n_feats, out_ch=ch+inc, kernel_size=11, stride=2); ch = ch+inc
         self.B1    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=11); ch = ch+inc
         self.B2    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=13); ch = ch+inc
         self.B3    = Block(n_subblocks=3, p=0.2, in_ch=ch, out_ch=ch+inc, kernel_size=17); ch = ch+inc

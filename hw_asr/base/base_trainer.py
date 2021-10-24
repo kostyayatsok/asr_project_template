@@ -126,7 +126,7 @@ class BaseTrainer:
                     break
 
             if epoch % self.save_period == 0 or best:
-                self._save_checkpoint(epoch, save_best=best, only_best=True)
+                self._save_checkpoint(epoch % 10, save_best=best, only_best=True)
 
     def _save_checkpoint(self, epoch, save_best=False, only_best=False):
         """

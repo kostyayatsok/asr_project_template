@@ -49,7 +49,7 @@ class Trainer(BaseTrainer):
         self.valid_data_loader = valid_data_loader
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
-        self.log_step = 10
+        self.log_step = 100
 
         self.train_metrics = MetricTracker(
             "Metrics/loss", "Metrics/grad_norm", *[m.name for m in self.metrics], writer=self.writer
@@ -103,6 +103,10 @@ class Trainer(BaseTrainer):
                     continue
                 else:
                     raise e
+            if self.writer is not None:
+                self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx, mode="train")
+                self.writer.add_scalar("Metrics/loss1", batch["loss"].item())
+
             self.train_metrics.update("Metrics/grad_norm", self.get_grad_norm())
             if batch_idx % self.log_step == 0 and self.writer is not None:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -148,8 +152,9 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-
+        print(batch["loss"])
         metrics.update("Metrics/loss", batch["loss"].item())
+
         for met in self.metrics:
             metrics.update(met.name, met(**batch))
         return batch
@@ -237,7 +242,7 @@ class Trainer(BaseTrainer):
 
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch)
-        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram.cpu().log()))
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram.cpu()))
         self.writer.add_image("Media/spectrogram", ToTensor()(image))
 
     def _log_audio(self, audio_batch):

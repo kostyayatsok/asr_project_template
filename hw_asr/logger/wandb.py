@@ -25,18 +25,19 @@ class WanDBWriter:
             logger.warning("For use wandb install it via \n\t pip install wandb")
 
         self.step = 0
+        self.loss_step = 0
         self.mode = ""
         self.timer = datetime.now()
 
     def set_step(self, step, mode="train"):
         self.mode = mode
         self.step = step
-        if step == 0:
-            self.timer = datetime.now()
-        else:
-            duration = datetime.now() - self.timer
-            self.add_scalar("steps_per_sec", 1 / duration.total_seconds())
-            self.timer = datetime.now()
+        # if step == 0:
+        #     self.timer = datetime.now()
+        # else:
+        #     duration = datetime.now() - self.timer
+        #     self.add_scalar("steps_per_sec", 1 / duration.total_seconds())
+        #     self.timer = datetime.now()
 
     def scalar_name(self, scalar_name):
         return f"{scalar_name}_{self.mode}"
@@ -46,6 +47,12 @@ class WanDBWriter:
             self.scalar_name(scalar_name): scalar,
         }, step=self.step)
 
+    def add_loss(self, scalar_name, scalar):
+        self.loss_step += 1
+        self.wandb.log({
+            self.scalar_name(scalar_name): scalar,
+        }, step=self.loss_step)
+    
     def add_scalars(self, tag, scalars):
         self.wandb.log({
             **{f"{scalar_name}_{tag}_{self.mode}": scalar for scalar_name, scalar in scalars.items()}
