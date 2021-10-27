@@ -6,6 +6,12 @@
 
 ```shell
 pip install -r ./requirements.txt
+gdown --id 14kotRSbZv5PA-P9mSKq4Whb3FLpIXd_y
+mkdir default_test_model
+mv checkpoint.pth default_test_model/
+cp  default_test_config.json default_test_model/config.json
+wget http://www.openslr.org/resources/11/3-gram.arpa.gz
+gunzip 3-gram.arpa.gz
 ```
 
 ## Recommended implementation order
