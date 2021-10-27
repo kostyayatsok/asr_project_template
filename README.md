@@ -14,6 +14,8 @@ wget http://www.openslr.org/resources/11/3-gram.arpa.gz
 gunzip 3-gram.arpa.gz
 ```
 
+For training https://www.openslr.org/28/ is required
+
 ## Recommended implementation order
 
 You might be a little intimidated by the number of folders and classes. Try to follow this steps to gradually undestand
