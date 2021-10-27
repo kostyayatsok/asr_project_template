@@ -210,7 +210,6 @@ class Trainer(BaseTrainer):
             *args,
             **kwargs,
     ):
-        # TODO: implement logging of beam search results
         argmax_inds = log_probs.cpu().argmax(-1)
         argmax_inds = [
             inds[: int(ind_len)]
@@ -229,15 +228,24 @@ class Trainer(BaseTrainer):
                 f"true: '{target}' | pred: '{pred}' "
                 f"| wer: {wer:.2f} | cer: {cer:.2f}\n"
             )
-            print(target)
-            print(pred)
-            print(wer)
-            print(cer)
             to_log_pred_raw.append(f"true: '{target}' | pred: '{raw_pred}'\n")
         self.writer.add_text(f"Media/predictions", "< < < < > > > >".join(to_log_pred))
         self.writer.add_text(
             f"Media/predictions_raw", "< < < <> > > >".join(to_log_pred_raw)
         )
+        
+        beamsearch_texts = [self.text_encoder.ctc_beam_search(log_prob, log_prob_len)[0][0] for log_prob, log_prob_len in zip(log_probs.cpu().numpy(), log_probs_length)]
+        tuples = list(zip(beamsearch_texts, text))
+        shuffle(tuples)
+        to_log_pred = []
+        for pred, target in tuples[:examples_to_log]:
+            wer = calc_wer(target, pred) * 100
+            cer = calc_cer(target, pred) * 100
+            to_log_pred.append(
+                f"true: '{target}' | pred: '{pred}' "
+                f"| wer: {wer:.2f} | cer: {cer:.2f}\n"
+            )
+        self.writer.add_text(f"Media/beamsearch", "< < < < > > > >".join(to_log_pred))
 
     def _log_spectrogram(self, spectrogram_batch):
         spectrogram = random.choice(spectrogram_batch)

@@ -3,6 +3,14 @@ import json
 import os
 from pathlib import Path
 
+import pathlib
+import platform
+plt = platform.system()
+if plt == 'Windows':
+    pathlib.PosixPath = pathlib.WindowsPath
+else:
+    pathlib.WindowsPath = pathlib.PosixPath
+
 import torch
 from tqdm import tqdm
 
@@ -57,6 +65,8 @@ def main(config, out_file):
             )
             batch["probs"] = batch["log_probs"].exp().cpu()
             batch["argmax"] = batch["probs"].argmax(-1)
+            batch["log_probs"] = batch["log_probs"].cpu().numpy()
+            
             for i in range(len(batch["text"])):
                 argmax = batch["argmax"][i]
                 argmax = argmax[:int(batch["log_probs_length"][i])]
@@ -65,7 +75,7 @@ def main(config, out_file):
                         "ground_trurh": batch["text"][i],
                         "pred_text_argmax": text_encoder.ctc_decode(argmax),
                         "pred_text_beam_search": text_encoder.ctc_beam_search(
-                            batch["probs"], batch["log_probs_length"], beam_size=100
+                            batch["log_probs"][i], batch["log_probs_length"][i], beam_size=100
                         )[:10],
                     }
                 )
