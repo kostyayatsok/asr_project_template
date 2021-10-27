@@ -1,0 +1,102 @@
+{
+    "name": "default_config",
+    "n_gpu": 1,
+    "preprocessing": {
+        "sr": 16000,
+        "spectrogram": {
+            "type": "MelSpectrogram",
+            "args": {
+                "n_mels": 128
+            }
+        }
+    },
+    "augmentations": {
+        "wave": [],
+        "spectrogram": []
+    },
+    "arch": {
+        "type": "DeepSpeech2Model",
+        "args": {
+            "n_feats": 128
+        }
+    },
+    "data": {
+        "val": {
+            "batch_size": 32,
+            "num_workers": 0,
+            "datasets": [
+                {
+                    "type": "LibrispeechDataset",
+                    "args": {
+                        "part": "test-clean"
+                    }
+                }
+            ]
+        },
+        "test": {
+            "batch_size": 32,
+            "num_workers": 0,
+            "datasets": [
+                {
+                    "type": "LibrispeechDataset",
+                    "args": {
+                        "part": "test-clean"
+                    }
+                }
+            ]
+        }
+    },
+    "optimizer": {
+        "type": "AdamW",
+        "args": {
+            "lr": 0.0005
+        }
+    },
+    "loss": {
+        "type": "CTCLoss",
+        "args": {}
+    },
+    "metrics": [
+        {
+            "type": "ArgmaxWERMetric",
+            "args": {
+                "name": "Metrics/WER (argmax)"
+            }
+        },
+        {
+            "type": "ArgmaxCERMetric",
+            "args": {
+                "name": "Metrics/CER (argmax)"
+            }
+        },
+        {
+            "type": "BeamsearchCERMetric",
+            "args": {
+                "name": "Metrics/CER (beamsearch)"
+            }
+        },
+        {
+            "type": "BeamsearchWERMetric",
+            "args": {
+                "name": "Metrics/WER (beamsearch)"
+            }
+        }
+    ],
+    "lr_scheduler": {
+        "type": "OneCycleLR",
+        "args": {
+            "max_lr": 0.0005,
+            "steps_per_epoch": 880,
+            "epochs": 50,
+            "anneal_strategy": "linear"
+        }
+    },
+    "trainer": {
+        "epochs": 50,
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        "visualize": "wandb",
+        "wandb_project": "asr_project"
+    }
+}

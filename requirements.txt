@@ -4,8 +4,6 @@ numpy
 tqdm
 tensorboard
 matplotlib
-
-
 pandas
 speechbrain~=0.5.9
 torchaudio~=0.9.1
@@ -13,3 +11,6 @@ datasets
 torch_audiomentations
 editdistance
 wandb
+gdown
+pyctcdecode
+https://github.com/kpu/kenlm/archive/master.zip

@@ -22,7 +22,7 @@ class CTCCharTextEncoder(CharTextEncoder):
         self.decoder = build_ctcdecoder(
             [""] + [a.upper() for a in alphabet],
             "3-gram.arpa",
-            alpha=1,
+            alpha=0.5,
             beta=0,
         )
     def ctc_decode(self, inds: List[int]) -> str:
