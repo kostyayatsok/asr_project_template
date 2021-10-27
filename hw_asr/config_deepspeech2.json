@@ -11,7 +11,27 @@
     }
   },
   "augmentations": {
-    "wave": [],
+    "wave": [
+      {
+        "type": "Gain",
+        "args": {
+          "sample_rate": 16000
+        }
+      },
+      {
+        "type": "PitchShift",
+        "args": {
+          "sample_rate": 16000
+        }
+      },
+      {
+        "type": "AddBackgroundNoise",
+        "args": {
+          "background_paths": "rirs_noises/",
+          "sample_rate": 16000
+        }
+      }
+    ],
     "spectrogram": [
       {
         "type": "FrequencyMasking",
@@ -22,7 +42,7 @@
       {
         "type": "TimeMasking",
         "args": {
-          "time_mask_param" : 75
+          "time_mask_param" : 100
         }
       }
     ]
@@ -99,6 +119,7 @@
   },
   "trainer": {
     "epochs": 50,
+    "len_epoch": 220,
     "save_dir": "saved/",
     "save_period": 1,
     "verbosity": 2,

@@ -152,7 +152,6 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-        print(batch["loss"])
         metrics.update("Metrics/loss", batch["loss"].item())
 
         for met in self.metrics:
